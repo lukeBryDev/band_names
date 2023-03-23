@@ -1,9 +1,12 @@
+import 'package:band_names/services/socket_service.dart';
+import 'package:band_names/src/features/domain/entities/enums/enum_server_status.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:band_names/src/features/data/models/band_model.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,10 +28,23 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final socketService = Provider.of<SocketService>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Band Names'),
         elevation: 1,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.pushNamed(context, 'status'),
+            icon: Icon(
+              socketService.serverStatus.icon,
+              color: socketService.serverStatus.color,
+            ),
+            tooltip:
+                'server connection status: ${socketService.serverStatus.label}',
+          )
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -45,16 +61,26 @@ class _HomePageState extends State<HomePage> {
             itemBuilder: (ctx, i) {
               if (i == 0) {
                 return const ListTile(
-                  leading: Text('#'),
-                  title: Center(child: Text('Name')),
-                  trailing: Text('Votes'),
+                  leading: Text(
+                    '#',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  title: Center(
+                      child: Text(
+                    'Name',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  )),
+                  trailing: Text(
+                    'Votes',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                 );
               }
               final int realIdx = i - 1;
               return Dismissible(
-                key: Key(bands[i].id ?? '$i'),
+                key: Key(bands[realIdx].id ?? '$realIdx'),
                 onDismissed: (direction) {
-                  bands.removeAt(i);
+                  bands.removeAt(realIdx);
                   // TODO: call delete form server
                 },
                 background: Container(
