@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 background: Container(
                   padding: const EdgeInsets.only(left: 8),
-                  decoration: const BoxDecoration(),
+                  decoration: const BoxDecoration(color: Colors.redAccent),
                   child: Align(
                       alignment: Alignment.centerLeft,
                       child: Row(
@@ -123,7 +123,7 @@ class _HomePageState extends State<HomePage> {
             }),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           _addNewBandDialog();
         },
         elevation: 1,
@@ -169,7 +169,7 @@ class _HomePageState extends State<HomePage> {
           builder: (ctx) {
             return CupertinoAlertDialog(
               title: const Text('New band name'),
-              content: TextField(
+              content: CupertinoTextField(
                 controller: _banNameTxtCtrl,
                 onChanged: (String t) {
                   setState(() {});
@@ -178,16 +178,16 @@ class _HomePageState extends State<HomePage> {
               actions: [
                 CupertinoDialogAction(
                   isDefaultAction: true,
-                  onPressed: _addNewBand,
-                  child: const Text('Add'),
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
                   child: const Text('Dismiss'),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                )
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  onPressed: _addNewBand,
+                  child: const Text('Add'),
+                ),
               ],
             );
           });
