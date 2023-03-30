@@ -7,9 +7,13 @@ class BandModel {
 
   factory BandModel.fromJson(Map<String, dynamic> json) {
     return BandModel(
-      id: json["id"],
-      name: json["name"],
-      votes: int.tryParse('${json["votes"]}}'),
+      id: json.containsKey("id") && (json["id"] is String)
+          ? json["id"]
+          : 'no-id',
+      name: json.containsKey("name") && (json["name"] is String)
+          ? json["name"]
+          : 'no-name',
+      votes: json.containsKey("votes") ? int.tryParse('${json["votes"]}') : 0,
     );
   }
 }

@@ -17,12 +17,33 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<BandModel> bands = [
-    BandModel(id: '1', name: 'Pink Floyd', votes: 100),
+    /*BandModel(id: '1', name: 'Pink Floyd', votes: 100),
     BandModel(id: '2', name: 'Guns & Roses', votes: 50),
     BandModel(id: '3', name: 'Metallica', votes: 60),
     BandModel(id: '4', name: 'Tame Impala', votes: 40),
-    BandModel(id: '5', name: 'The Doors', votes: 100),
+    BandModel(id: '5', name: 'The Doors', votes: 100),*/
   ];
+
+  @override
+  void initState() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.on('active-bands', (payload) {
+      log('$payload', name: 'socket - active-bands');
+      if (payload is List) {
+        bands = (payload).map((e) => BandModel.fromJson(e)).toList();
+      }
+      setState(() {});
+    });
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.off('active-bands');
+    super.dispose();
+  }
 
   final TextEditingController _banNameTxtCtrl = TextEditingController();
 
