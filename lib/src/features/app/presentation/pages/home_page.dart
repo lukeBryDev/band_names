@@ -123,7 +123,11 @@ class _HomePageState extends State<HomePage> {
                       )),
                 ),
                 child: ListTile(
-                  onTap: () {},
+                  onTap: () {
+                    final socketService =
+                        Provider.of<SocketService>(context, listen: false);
+                    socketService.socket.emit('vote-band', {"id": bands[realIdx].id});
+                  },
                   leading: IntrinsicWidth(
                     child: Row(
                       children: [
