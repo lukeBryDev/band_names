@@ -126,7 +126,8 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     final socketService =
                         Provider.of<SocketService>(context, listen: false);
-                    socketService.socket.emit('vote-band', {"id": bands[realIdx].id});
+                    socketService.socket
+                        .emit('vote-band', {"id": bands[realIdx].id});
                   },
                   leading: IntrinsicWidth(
                     child: Row(
@@ -203,15 +204,18 @@ class _HomePageState extends State<HomePage> {
               actions: [
                 CupertinoDialogAction(
                   isDefaultAction: true,
-                  child: const Text('Dismiss'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: _addNewBand,
+                  child: const Text('Add'),
                 ),
                 CupertinoDialogAction(
                   isDefaultAction: true,
-                  onPressed: _addNewBand,
-                  child: const Text('Add'),
+                  child: const Text(
+                    'Dismiss',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
                 ),
               ],
             );
@@ -223,13 +227,19 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _addNewBand() async {
     if (_banNameTxtCtrl.text.isNotEmpty) {
-      log(_banNameTxtCtrl.text, name: 'name:');
-      bands.add(BandModel(
-          id: DateTime.now().toString(),
-          name: _banNameTxtCtrl.text,
-          votes: _banNameTxtCtrl.text.length));
-      setState(() {});
+      final band = BandModel(name: _banNameTxtCtrl.text);
+
+      log('${band.toJson()}', name: 'payload:');
+
+      /// execution time
+      /*bands.add(band);
+      setState(() {});*/
+
+      final socketService = Provider.of<SocketService>(context, listen: false);
+
+      socketService.socket.emit('add-band', band.toJson());
     }
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(); // Closes dialog
+    _banNameTxtCtrl.text = ''; // reset input
   }
 }

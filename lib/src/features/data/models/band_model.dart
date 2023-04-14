@@ -16,4 +16,11 @@ class BandModel {
       votes: json.containsKey("votes") ? int.tryParse('${json["votes"]}') : 0,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> band = {"name": name};
+    if (id != null) band["id"] = id;
+    if (votes != null) band["votes"] = votes;
+    return band;
+  }
 }
