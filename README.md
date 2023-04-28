@@ -1,16 +1,12 @@
 # band_names
 
-Band names with socket mobile
+Band names with socket mobile. Based on Fernando Herrera's course: 'Flutter Avanzado: Lleva tu conocimiento al siguiente nivel
+'
 
 ## Getting Started
 
 This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
+Resources:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Udemy: Flutter Avanzado: Lleva tu conocimiento al siguiente nivel](https://www.udemy.com/course/flutter-avanzado-fernando-herrera/)
