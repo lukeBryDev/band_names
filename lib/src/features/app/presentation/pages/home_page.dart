@@ -27,15 +27,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     final socketService = Provider.of<SocketService>(context, listen: false);
-    socketService.socket.on('active-bands', (payload) {
-      log('$payload', name: 'socket - active-bands');
-      if (payload is List) {
-        bands = (payload).map((e) => BandModel.fromJson(e)).toList();
-      }
-      setState(() {});
-    });
-
+    socketService.socket.on('active-bands', _handleActiveBands);
     super.initState();
+  }
+
+  void _handleActiveBands(dynamic payload) {
+    log('$payload', name: 'socket - payload');
+
+    switch (payload.runtimeType) {
+      case List:
+        bands = (payload).map((e) => BandModel.fromJson(e)).toList();
+        break;
+    }
+    setState(() {});
   }
 
   @override
@@ -67,16 +71,9 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          bands = [
-            BandModel(id: '1', name: 'Pink Floyd', votes: 100),
-            BandModel(id: '2', name: 'Guns & Roses', votes: 50),
-            BandModel(id: '3', name: 'Metallica', votes: 60),
-            BandModel(id: '4', name: 'Tame Impala', votes: 40),
-            BandModel(id: '5', name: 'The Doors', votes: 100),
-          ];
-        },
+      body: IgnorePointer(
+        ignoring: socketService.serverStatus == ServerStatus.offline ||
+            socketService.serverStatus == ServerStatus.connecting,
         child: ListView.builder(
             itemCount: bands.length + 1,
             itemBuilder: (ctx, i) {
@@ -98,12 +95,12 @@ class _HomePageState extends State<HomePage> {
                 );
               }
               final int realIdx = i - 1;
+              final socketService =
+                  Provider.of<SocketService>(context, listen: false);
               return Dismissible(
                 key: Key(bands[realIdx].id ?? '$realIdx'),
-                onDismissed: (direction) {
-                  bands.removeAt(realIdx);
-                  // TODO: call delete form server
-                },
+                onDismissed: (_) => socketService.socket
+                    .emit('delete-band', {"id": bands[realIdx].id}),
                 background: Container(
                   padding: const EdgeInsets.only(left: 8),
                   decoration: const BoxDecoration(color: Colors.redAccent),
@@ -148,13 +145,17 @@ class _HomePageState extends State<HomePage> {
               );
             }),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          _addNewBandDialog();
-        },
-        elevation: 1,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      floatingActionButton: IgnorePointer(
+        ignoring: socketService.serverStatus == ServerStatus.offline ||
+            socketService.serverStatus == ServerStatus.connecting,
+        child: FloatingActionButton(
+          onPressed: () async {
+            _addNewBandDialog();
+          },
+          elevation: 1,
+          tooltip: 'Increment',
+          child: const Icon(Icons.add),
+        ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
@@ -163,63 +164,51 @@ class _HomePageState extends State<HomePage> {
     if (Platform.isAndroid) {
       return showDialog(
           context: context,
-          builder: (ctx) {
-            return AlertDialog(
-              title: const Text('New band name'),
-              content: TextField(
-                controller: _banNameTxtCtrl,
-                onChanged: (String t) {
-                  setState(() {});
-                },
-              ),
-              actions: [
-                MaterialButton(
-                  onPressed: _addNewBand,
-                  elevation: 5,
-                  textColor: Colors.blue,
-                  child: const Text('Add'),
+          builder: (_) => AlertDialog(
+                title: const Text('New band name'),
+                content: TextField(
+                  controller: _banNameTxtCtrl,
+                  onChanged: (String t) => setState(() {}),
                 ),
-                MaterialButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  elevation: 5,
-                  child: const Text('Cancel'),
-                ),
-              ],
-            );
-          });
+                actions: [
+                  MaterialButton(
+                    onPressed: _addNewBand,
+                    elevation: 5,
+                    textColor: Colors.blue,
+                    child: const Text('Add'),
+                  ),
+                  MaterialButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    elevation: 5,
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ));
     } else if (Platform.isIOS) {
       return showCupertinoDialog(
           context: context,
-          builder: (ctx) {
-            return CupertinoAlertDialog(
-              title: const Text('New band name'),
-              content: CupertinoTextField(
-                controller: _banNameTxtCtrl,
-                onChanged: (String t) {
-                  setState(() {});
-                },
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  onPressed: _addNewBand,
-                  child: const Text('Add'),
+          builder: (_) => CupertinoAlertDialog(
+                title: const Text('New band name'),
+                content: CupertinoTextField(
+                  controller: _banNameTxtCtrl,
+                  onChanged: (String t) => setState(() {}),
                 ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text(
-                    'Dismiss',
-                    style: TextStyle(color: Colors.redAccent),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    onPressed: _addNewBand,
+                    child: const Text('Add'),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          });
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text(
+                      'Dismiss',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ));
     } else {
       return;
     }
@@ -228,15 +217,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _addNewBand() async {
     if (_banNameTxtCtrl.text.isNotEmpty) {
       final band = BandModel(name: _banNameTxtCtrl.text);
-
-      log('${band.toJson()}', name: 'payload:');
-
-      /// execution time
-      /*bands.add(band);
-      setState(() {});*/
-
       final socketService = Provider.of<SocketService>(context, listen: false);
-
       socketService.socket.emit('add-band', band.toJson());
     }
     Navigator.of(context).pop(); // Closes dialog
