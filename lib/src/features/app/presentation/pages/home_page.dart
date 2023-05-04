@@ -6,6 +6,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:band_names/src/features/data/models/band_model.dart';
+import 'package:pie_chart/pie_chart.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -36,7 +37,16 @@ class _HomePageState extends State<HomePage> {
 
     switch (payload.runtimeType) {
       case List:
-        bands = (payload).map((e) => BandModel.fromJson(e)).toList();
+        bands.clear();
+        for (var e in (payload as List)) {
+          bands.add(BandModel.fromJson(e));
+        }
+        for (var e in bands) {
+          int idx = bands.indexWhere((i) => i.id == e.id);
+          bands[idx] = bands[idx].copyWith(
+              color: Colors
+                  .primaries[(e.name?.length ?? 0) % Colors.primaries.length]);
+        }
         break;
     }
     setState(() {});
@@ -57,7 +67,11 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Band Names'),
+        title: const Text(
+          'Band Names',
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
         elevation: 1,
         actions: [
           IconButton(
@@ -74,76 +88,85 @@ class _HomePageState extends State<HomePage> {
       body: IgnorePointer(
         ignoring: socketService.serverStatus == ServerStatus.offline ||
             socketService.serverStatus == ServerStatus.connecting,
-        child: ListView.builder(
-            itemCount: bands.length + 1,
-            itemBuilder: (ctx, i) {
-              if (i == 0) {
-                return const ListTile(
-                  leading: Text(
-                    '#',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  title: Center(
-                      child: Text(
-                    'Name',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  )),
-                  trailing: Text(
-                    'Votes',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                );
-              }
-              final int realIdx = i - 1;
-              final socketService =
-                  Provider.of<SocketService>(context, listen: false);
-              return Dismissible(
-                key: Key(bands[realIdx].id ?? '$realIdx'),
-                onDismissed: (_) => socketService.socket
-                    .emit('delete-band', {"id": bands[realIdx].id}),
-                background: Container(
-                  padding: const EdgeInsets.only(left: 8),
-                  decoration: const BoxDecoration(color: Colors.redAccent),
-                  child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        children: const [
-                          Text(
-                            'Delete band',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          Icon(
-                            Icons.restore_from_trash_sharp,
-                            color: Colors.white,
-                          )
-                        ],
-                      )),
-                ),
-                child: ListTile(
-                  onTap: () {
+        child: Column(
+          children: [
+            _pieChart(),
+            Expanded(
+              child: ListView.builder(
+                  itemCount: bands.length + 1,
+                  itemBuilder: (ctx, i) {
+                    if (i == 0) {
+                      return const ListTile(
+                        leading: Text(
+                          '#',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        title: Center(
+                            child: Text(
+                          'Name',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        )),
+                        trailing: Text(
+                          'Votes',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      );
+                    }
+                    final int realIdx = i - 1;
                     final socketService =
                         Provider.of<SocketService>(context, listen: false);
-                    socketService.socket
-                        .emit('vote-band', {"id": bands[realIdx].id});
-                  },
-                  leading: IntrinsicWidth(
-                    child: Row(
-                      children: [
-                        Text('${realIdx + 1}'),
-                        const SizedBox(width: 5),
-                        CircleAvatar(
-                          backgroundColor: Colors.blue[100],
-                          child:
-                              Text(bands[realIdx].name?.substring(0, 2) ?? ''),
-                        )
-                      ],
-                    ),
-                  ),
-                  title: Text(bands[realIdx].name ?? ''),
-                  trailing: Text('${bands[realIdx].votes}'),
-                ),
-              );
-            }),
+                    return Dismissible(
+                      key: Key(bands[realIdx].id ?? '$realIdx'),
+                      onDismissed: (_) => socketService.socket
+                          .emit('delete-band', {"id": bands[realIdx].id}),
+                      background: Container(
+                        padding: const EdgeInsets.only(left: 8),
+                        decoration:
+                            const BoxDecoration(color: Colors.redAccent),
+                        child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              children: const [
+                                Text(
+                                  'Delete band',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                Icon(
+                                  Icons.restore_from_trash_sharp,
+                                  color: Colors.white,
+                                )
+                              ],
+                            )),
+                      ),
+                      child: ListTile(
+                        onTap: () {
+                          final socketService = Provider.of<SocketService>(
+                              context,
+                              listen: false);
+                          socketService.socket
+                              .emit('vote-band', {"id": bands[realIdx].id});
+                        },
+                        leading: IntrinsicWidth(
+                          child: Row(
+                            children: [
+                              Text('${realIdx + 1}'),
+                              const SizedBox(width: 5),
+                              CircleAvatar(
+                                backgroundColor: bands[realIdx].color,
+                                child: Text(
+                                    bands[realIdx].name?.substring(0, 2) ?? ''),
+                              )
+                            ],
+                          ),
+                        ),
+                        title: Text(bands[realIdx].name ?? ''),
+                        trailing: Text('${bands[realIdx].votes}'),
+                      ),
+                    );
+                  }),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: IgnorePointer(
         ignoring: socketService.serverStatus == ServerStatus.offline ||
@@ -157,6 +180,55 @@ class _HomePageState extends State<HomePage> {
           child: const Icon(Icons.add),
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  Widget _pieChart() {
+    if (bands.isEmpty) return const SizedBox();
+
+    Map<String, double> dataMap = {};
+
+    for (var e in bands) {
+      dataMap.putIfAbsent(e.name ?? '', () => e.votes?.toDouble() ?? 0.0);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(15),
+      width: double.infinity,
+      height: 200,
+      child: PieChart(
+        dataMap: dataMap,
+        animationDuration: const Duration(milliseconds: 800),
+        chartLegendSpacing: 32,
+        chartRadius: MediaQuery.of(context).size.width / 2,
+        colorList: bands
+            .map((e) =>
+                e.color ??
+                Colors.primaries[e.name?.length ?? 0 % Colors.primaries.length])
+            .toList(),
+        initialAngleInDegree: 0,
+        chartType: ChartType.ring,
+        ringStrokeWidth: 20,
+        centerText: "VOTES",
+        legendOptions: const LegendOptions(
+          showLegendsInRow: false,
+          legendPosition: LegendPosition.left,
+          showLegends: true,
+          legendShape: BoxShape.circle,
+          legendTextStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        chartValuesOptions: const ChartValuesOptions(
+          showChartValueBackground: true,
+          showChartValues: true,
+          showChartValuesInPercentage: false,
+          showChartValuesOutside: false,
+          decimalPlaces: 0,
+        ),
+        // gradientList: ---To add gradient colors---
+        // emptyColorGradient: ---Empty Color gradient---
+      ),
     );
   }
 

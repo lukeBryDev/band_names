@@ -1,9 +1,26 @@
+import 'package:flutter/material.dart';
+
 class BandModel {
   final String? id;
   final String? name;
   final int? votes;
+  final Color? color;
 
-  BandModel({this.id, this.name, this.votes});
+  BandModel({this.id, this.name, this.votes, this.color});
+
+  BandModel copyWith({
+    String? id,
+    String? name,
+    int? votes,
+    Color? color,
+  }) {
+    return BandModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      votes: votes ?? this.votes,
+      color: color ?? this.color,
+    );
+  }
 
   factory BandModel.fromJson(Map<String, dynamic> json) {
     return BandModel(
