@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:band_names/src/core/env/env.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:band_names/src/features/domain/entities/enums/enum_server_status.dart';
@@ -21,7 +22,7 @@ class SocketService with ChangeNotifier {
 
   void _initConfig() {
 // Dart client
-    _socket = IO.io('http://localhost:3000/', {
+    _socket = IO.io(Env.socketUri, {
       'transports': ['websocket'],
       'autoConnect': true,
     });
